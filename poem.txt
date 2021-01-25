@@ -1,0 +1,26 @@
+Twas the night before working, when all through the house,
+Not a Jesse was sleeping, (not the case for his spouse)
+
+To be up in three hours, he had to be,
+Which was kind of fucked up, not a reason for glee
+
+Instead of him sleeping, which would have been smart,
+He stared at the terminal, learning his art
+
+There were things to debug, all the programs, the errors!
+He had no time for other frivilous cares
+
+So he typed away, cursing all the while,
+Any reason this motherfucking source wouldn't compile
+
+When finally; Eureka! An end to this damnation!
+He would consult the language documentation!
+
+A parameter change here.. some expressions there..
+Soon this problem would be out of his hair
+
+Again, once more, he tried to compile,
+And again, ... the same message, he found to be vile
+
+Only this time, he stared a little closer at the screen,
+He was missing a semicolon on line 113
