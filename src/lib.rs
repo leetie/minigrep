@@ -1,5 +1,38 @@
-use std::{env, error::Error, fs};
+use std::{error::Error, fs};
+extern crate clap;
+use clap::{App, Arg};
 
+pub fn init_clap() -> Vec<String> {
+  let matches = App::new("Minigrep")
+    .version("1.0")
+    .author("Jesse Parsons <savvyjesse@aol.com>")
+    .about("Lightweight grep utility")
+    .arg(
+      Arg::with_name("insensitive")
+        .short("i")
+        .long("insensitive")
+        .help("Sets case insensitivity"),
+    )
+    .arg(
+      Arg::with_name("QUERY")
+        .help("Sets the query string")
+        .required(true)
+        .index(1),
+    )
+    .arg(
+      Arg::with_name("FILENAME")
+        .help("The file to run the query against")
+        .required(true)
+        .index(2),
+    )
+    .get_matches();
+
+  vec![
+    matches.value_of("QUERY").unwrap().to_string(),
+    matches.value_of("FILENAME").unwrap().to_string(),
+    matches.is_present("insensitive").to_string(),
+  ]
+}
 pub struct Config {
   pub query: String,
   pub filename: String,
@@ -7,13 +40,18 @@ pub struct Config {
 }
 
 impl Config {
-  pub fn new(args: &[String]) -> Result<Config, &'static str> {
-    if args.len() < 3 {
+  pub fn new(args: Vec<String>) -> Result<Config, &'static str> {
+    if args.len() < 2 {
       return Err("not enough arguments");
     }
-    let query = args[1].clone();
-    let filename = args[2].clone();
-    let case_sensitive = env::var("CASE_INSENSITIVE").is_err();
+    let query = args[0].clone();
+    let filename = args[1].clone();
+    let case_sensitive = match args[2].as_str() {
+      "false" => true,
+      "true" => false,
+      &_ => panic!("big ow"),
+    };
+
     Ok(Config {
       query,
       filename,
