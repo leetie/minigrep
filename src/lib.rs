@@ -4,7 +4,7 @@ use clap::{App, Arg};
 
 pub fn init_clap() -> Vec<String> {
   let matches = App::new("Minigrep")
-    .version("1.0")
+    .version("1.0.1")
     .author("Jesse Parsons <savvyjesse@aol.com>")
     .about("Lightweight grep utility")
     .arg(
@@ -12,6 +12,12 @@ pub fn init_clap() -> Vec<String> {
         .short("i")
         .long("insensitive")
         .help("Sets case insensitivity"),
+    )
+    .arg(
+      Arg::with_name("line numbers")
+        .short("l")
+        .long("line-numbers")
+        .help("Shows line numbers for queried pattern"),
     )
     .arg(
       Arg::with_name("QUERY")
@@ -31,12 +37,14 @@ pub fn init_clap() -> Vec<String> {
     matches.value_of("QUERY").unwrap().to_string(),
     matches.value_of("FILENAME").unwrap().to_string(),
     matches.is_present("insensitive").to_string(),
+    matches.is_present("line numbers").to_string(),
   ]
 }
 pub struct Config {
   pub query: String,
   pub filename: String,
   pub case_sensitive: bool,
+  pub line_numbers: bool,
 }
 
 impl Config {
@@ -49,13 +57,19 @@ impl Config {
     let case_sensitive = match args[2].as_str() {
       "false" => true,
       "true" => false,
-      &_ => panic!("big ow"),
+      &_ => return Err("problem with argument parsing"),
+    };
+    let line_numbers = match args[3].as_str() {
+      "false" => false,
+      "true" => true,
+      _ => return Err("problem with argument parsing"),
     };
 
     Ok(Config {
       query,
       filename,
       case_sensitive,
+      line_numbers,
     })
   }
 }
@@ -64,9 +78,9 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
   let contents = fs::read_to_string(config.filename)?;
 
   let results = if config.case_sensitive {
-    search(&config.query, &contents)
+    search(&config.query, &contents, config.line_numbers)
   } else {
-    search_case_insensitive(&config.query, &contents)
+    search_case_insensitive(&config.query, &contents, config.line_numbers)
   };
 
   for line in results {
@@ -75,25 +89,51 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
   Ok(())
 }
 
-pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
+pub fn search<'a>(query: &str, contents: &'a str, line_numbers: bool) -> Vec<String> {
+  // conditionally set line_num if config.line_numbers is true.
+  // if so, add line numbers to results
   let mut results = Vec::new();
-  for line in contents.lines() {
-    if line.contains(query) {
-      results.push(line);
+
+  if line_numbers {
+    let mut ind = 1;
+    for line in contents.lines() {
+      if line.contains(query) {
+        results.push(String::from(format!("{} {}", ind, line)))
+      }
+      ind += 1;
+    }
+  } else {
+    for line in contents.lines() {
+      if line.contains(query) {
+        results.push(line.to_string());
+      }
     }
   }
 
   results
 }
 
-pub fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
+pub fn search_case_insensitive<'a>(
+  query: &str,
+  contents: &'a str,
+  line_numbers: bool,
+) -> Vec<String> {
   let mut results = Vec::new();
-  for line in contents.lines() {
-    if line.to_lowercase().contains(&query.to_lowercase()) {
-      results.push(line)
+  if line_numbers {
+    let mut ind = 1;
+    for line in contents.lines() {
+      if line.to_lowercase().contains(&query.to_lowercase()) {
+        results.push(String::from(format!("{} {}", ind, line)))
+      }
+      ind += 1;
+    }
+  } else {
+    for line in contents.lines() {
+      if line.to_lowercase().contains(&query.to_lowercase()) {
+        results.push(line.to_string())
+      }
     }
   }
-
   results
 }
 #[cfg(test)]
@@ -108,8 +148,12 @@ Rust:
 safe, fast, productive.
 Pick three.
 Duct";
+    let line_numbers = false;
 
-    assert_eq!(vec!["safe, fast, productive."], search(query, contents));
+    assert_eq!(
+      vec!["safe, fast, productive."],
+      search(query, contents, line_numbers)
+    );
   }
   #[test]
   fn case_insensitive() {
@@ -119,9 +163,10 @@ Rust:
 safe, fast, productive.
 Pick three.
 Trust me.";
+    let line_numbers = false;
     assert_eq!(
       vec!["Rust:", "Trust me."],
-      search_case_insensitive(query, contents)
+      search_case_insensitive(query, contents, line_numbers)
     );
   }
 }
